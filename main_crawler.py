@@ -13,6 +13,8 @@ from webdriver_manager.firefox import GeckoDriverManager
 from selenium.webdriver.common.keys import Keys
 import time
 import random
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 def __create_browser():    
     # 使用 Chrome 的 WebDriver
@@ -31,14 +33,14 @@ def __check_if_keywords_in_patent(patent_number, keywords):
     _browser = __create_browser()
     _browser.get("https://gpss3.tipo.gov.tw/gpsskmc/gpssbkm?@@0.13291281677003863")
 
-    time.sleep(random.random() * 5)
+    time.sleep(2.5 + random.random() * 2.5)
         
     # 搜尋專利號
     input_element = _browser.find_element_by_xpath("//input[@name='_21_1_T']")
     input_element.send_keys(patent_number)
     time.sleep(random.random() * 1)
     input_element.send_keys(Keys.ENTER)
-    time.sleep(random.random() * 10)
+    time.sleep(5 + random.random() * 5)
 
     #查詢所有連結
     link_elements = _browser.find_elements_by_css_selector('a.link02')
@@ -48,8 +50,8 @@ def __check_if_keywords_in_patent(patent_number, keywords):
         href = link_element.get_attribute('href')
         text = link_element.text
         if text == patent_number:
-            link_element.click()
-            time.sleep(random.random() * 10)
+            _browser.get(href)
+            time.sleep(5 + random.random() * 5)
             check_if_get_right_element = True
             break
 
@@ -63,8 +65,9 @@ def __check_if_keywords_in_patent(patent_number, keywords):
     # 底選所有 more link
     for div in divs_with_class_morelink:
         if div.text == "more":
+            _browser.execute_script("arguments[0].scrollIntoView();", div)
             div.click()
-            time.sleep(random.random() * 5)
+            time.sleep(2.5 + random.random() * 2.5)
 
     # 取得正確結果，進行文字檢查
     html = _browser.page_source 
@@ -106,12 +109,13 @@ def main():
     final_reports = list()
     for patent_number in patent_number_list:
         item = __check_if_keywords_in_patent(patent_number = patent_number, keywords=keyword_list)
+        print("Complete " + patent_number)
         if item != None:
             report = patent_number + "," + ",".join([str(num) for num in list(item.values())])
             final_reports.append(report)
 
     with open("report.csv", "w", encoding="utf-8") as file:
-        file.write("專利號," + ",".join(keyword_list) + "\n")
+        file.write("公開/公告號," + ",".join(keyword_list) + "\n")
         for report in final_reports:
             file.write(report + "\n")
 
