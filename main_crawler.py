@@ -15,6 +15,7 @@ import time
 import random
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import pandas as pd
 
 def __create_browser():    
     # 使用 Chrome 的 WebDriver
@@ -28,7 +29,7 @@ def __create_browser():
 ####################################################################################
 # 查詢台灣 Quadro 網路價格
 ####################################################################################
-def __check_if_keywords_in_patent(patent_number, keywords):
+def __check_if_keywords_in_patent(patent_number, knowledge_dict):
     
     _browser = __create_browser()
     _browser.get("https://gpss3.tipo.gov.tw/gpsskmc/gpssbkm?@@0.13291281677003863")
@@ -76,17 +77,19 @@ def __check_if_keywords_in_patent(patent_number, keywords):
     contents = soup.find_all("div", class_="panel-body")
 
     result = dict()
-    for keyword in keywords:
-        result[keyword] = 0
+    for category_name in knowledge_dict.keys():
+        result[category_name] = 0
 
-    for content in contents:               
-        if result[keyword] == 1:
-            break
-
-        for keyword in keywords:
-            if keyword in content.text:
-                result[keyword] = 1
-                break
+    for content in contents:
+        # 透過分類字典檢查是否所有關鍵字都存在
+        for category_name in knowledge_dict.keys():
+            # 取得 OR 關鍵字組合
+            keywords_list = knowledge_dict[category_name]
+            for keywords in keywords_list:
+                # 單一 Keywords 要完全出現在 content 之中
+                if all(keyword in content.text for keyword in keywords):
+                    result[category_name] = 1
+                    break
 
     _browser.quit()
 
@@ -95,29 +98,45 @@ def __check_if_keywords_in_patent(patent_number, keywords):
 
 
 def main():
-    keyword_list = list()
+    knowledge_dict = dict()
     patent_number_list = list()
     with open("keyword_list.txt", "r", encoding="utf-8") as file:
         for line in file:
             if line.strip() != "":
-                keyword_list.append(line.strip()) 
+                items = line.strip().split(":")
+                # 處理關鍵字
+                keyword_token_list = items[1].replace("][", "&").replace("[", "").replace("]", "").split("&")
+                knowledge_dict[items[0]] = [keyword_token.split(";") for keyword_token in keyword_token_list]
     with open("patent_number_list.txt", "r", encoding="utf-8") as file:
         for line in file:
             if line.strip() != "":
                 patent_number_list.append(line.strip()) 
 
-    final_reports = list()
+    final_reports = dict()
     for patent_number in patent_number_list:
-        item = __check_if_keywords_in_patent(patent_number = patent_number, keywords=keyword_list)
+        item = __check_if_keywords_in_patent(patent_number = patent_number, knowledge_dict=knowledge_dict)
         print("Complete " + patent_number)
         if item != None:
-            report = patent_number + "," + ",".join([str(num) for num in list(item.values())])
-            final_reports.append(report)
+            final_reports[patent_number] = item
 
-    with open("report.csv", "w", encoding="utf-8") as file:
-        file.write("公開/公告號," + ",".join(keyword_list) + "\n")
-        for report in final_reports:
-            file.write(report + "\n")
+    data = {
+            "公開/公告號": patent_number_list,
+        }
+    
+    for keyword in knowledge_dict.keys():
+        column_item = list()
+        for patent_number in patent_number_list:
+            column_item.append(final_reports[patent_number][keyword])
+        data[keyword] = column_item
+
+    df = pd.DataFrame(data)
+
+    # 指定要保存的Excel文件名和工作表名
+    excel_file = "report.xlsx"
+    sheet_name = "數據表"
+
+    # 使用to_excel方法将数据写入Excel文件
+    df.to_excel(excel_file, sheet_name=sheet_name, index=False, engine='openpyxl')
 
 if __name__ == '__main__':
     main()
