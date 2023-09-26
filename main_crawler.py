@@ -20,7 +20,7 @@ import pandas as pd
 def __create_browser():    
     # 使用 Chrome 的 WebDriver
     options = Options()
-    options.headless = False
+    options.headless = True
     browser = webdriver.Firefox(executable_path = GeckoDriverManager().install(), options=options)
 
     return browser
@@ -34,7 +34,7 @@ def __check_if_keywords_in_patent(patent_number, knowledge_dict):
     _browser = __create_browser()
     _browser.get("https://gpss3.tipo.gov.tw/gpsskmc/gpssbkm?@@0.13291281677003863")
 
-    time.sleep(2.5 + random.random() * 2.5)
+    time.sleep(5 + random.random() * 5)
         
     # 搜尋專利號
     input_element = _browser.find_element_by_xpath("//input[@name='_21_1_T']")
@@ -59,6 +59,7 @@ def __check_if_keywords_in_patent(patent_number, knowledge_dict):
     #沒有查到準確連結，則終止程序
     if not check_if_get_right_element:
         _browser.quit()
+        print("Error in " + patent_number)
         return
     
     divs_with_class_morelink = _browser.find_elements_by_css_selector('div.moreLink')
@@ -68,7 +69,7 @@ def __check_if_keywords_in_patent(patent_number, knowledge_dict):
         if div.text == "more":
             _browser.execute_script("arguments[0].scrollIntoView();", div)
             div.click()
-            time.sleep(2.5 + random.random() * 2.5)
+            time.sleep(1 + random.random() * 2)
 
     # 取得正確結果，進行文字檢查
     html = _browser.page_source 
@@ -137,6 +138,8 @@ def main():
 
     # 使用to_excel方法将数据写入Excel文件
     df.to_excel(excel_file, sheet_name=sheet_name, index=False, engine='openpyxl')
+    
+    print("Completed!!")
 
 if __name__ == '__main__':
     main()
