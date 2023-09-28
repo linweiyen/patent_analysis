@@ -30,7 +30,7 @@ def __create_browser():
 # 查詢台灣 Quadro 網路價格
 ####################################################################################
 def __check_if_keywords_in_patent(patent_number, knowledge_dict):
-    
+    # 產生模擬的瀏覽器
     _browser = __create_browser()
     _browser.get("https://gpss3.tipo.gov.tw/gpsskmc/gpssbkm?@@0.13291281677003863")
 
