@@ -30,9 +30,8 @@ def __create_browser():
 ####################################################################################
 # 查詢台灣 Quadro 網路價格
 ####################################################################################
-def __check_if_keywords_in_patent(patent_number, knowledge_dict):
+def __check_if_keywords_in_patent(_browser, patent_number, knowledge_dict):
     # 產生模擬的瀏覽器
-    _browser = __create_browser()
     _browser.get("https://gpss3.tipo.gov.tw/gpsskmc/gpssbkm?@@0.13291281677003863")
 
     time.sleep(5 + random.random() * 5)
@@ -59,7 +58,7 @@ def __check_if_keywords_in_patent(patent_number, knowledge_dict):
 
     #沒有查到準確連結，則終止程序
     if not check_if_get_right_element:
-        _browser.quit()
+        # _browser.quit()
         print("Error in " + patent_number)
         return
     
@@ -93,7 +92,7 @@ def __check_if_keywords_in_patent(patent_number, knowledge_dict):
                     result[category_name] = 1
                     break
 
-    _browser.quit()
+    # _browser.quit()
 
     return result
 
@@ -104,6 +103,7 @@ def main():
     patent_number_list = list()
     logging.basicConfig(filename='patent_analysis.log', level=logging.INFO)
     logger = logging.getLogger(__name__)
+    _browser = __create_browser()
     with open("keyword_list.txt", "r", encoding="utf-8") as file:
         for line in file:
             if line.strip() != "":
@@ -118,7 +118,7 @@ def main():
 
     final_reports = dict()
     for patent_number in patent_number_list:
-        item = __check_if_keywords_in_patent(patent_number = patent_number, knowledge_dict=knowledge_dict)
+        item = __check_if_keywords_in_patent(_browser, patent_number = patent_number, knowledge_dict=knowledge_dict)
         
         if item != None:
             final_reports[patent_number] = item
@@ -129,6 +129,8 @@ def main():
     data = {
             "公開/公告號": patent_number_list,
         }
+    
+    _browser.quit()
     
     for keyword in knowledge_dict.keys():
         column_item = list()
