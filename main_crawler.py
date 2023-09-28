@@ -16,6 +16,7 @@ import random
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import pandas as pd
+import logging
 
 def __create_browser():    
     # 使用 Chrome 的 WebDriver
@@ -101,6 +102,8 @@ def __check_if_keywords_in_patent(patent_number, knowledge_dict):
 def main():
     knowledge_dict = dict()
     patent_number_list = list()
+    logging.basicConfig(filename='patent_analysis.log', level=logging.INFO)
+    logger = logging.getLogger(__name__)
     with open("keyword_list.txt", "r", encoding="utf-8") as file:
         for line in file:
             if line.strip() != "":
@@ -116,9 +119,12 @@ def main():
     final_reports = dict()
     for patent_number in patent_number_list:
         item = __check_if_keywords_in_patent(patent_number = patent_number, knowledge_dict=knowledge_dict)
-        print("Complete " + patent_number)
+        
         if item != None:
             final_reports[patent_number] = item
+            print("Complete " + patent_number)
+        else:
+            logger.info("Cannot get information of " + patent_number)
 
     data = {
             "公開/公告號": patent_number_list,
@@ -127,7 +133,10 @@ def main():
     for keyword in knowledge_dict.keys():
         column_item = list()
         for patent_number in patent_number_list:
-            column_item.append(final_reports[patent_number][keyword])
+            if patent_number in final_reports.keys():
+                column_item.append(final_reports[patent_number][keyword])
+            else:
+                column_item.append("")
         data[keyword] = column_item
 
     df = pd.DataFrame(data)
